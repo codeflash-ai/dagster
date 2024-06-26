@@ -25,7 +25,10 @@ from typing_extensions import Literal, TypeAlias
 from dagster._core.definitions.asset_check_spec import AssetCheckKey
 from dagster._core.definitions.dependency import DependencyStructure
 from dagster._core.definitions.events import AssetKey
-from dagster._core.errors import DagsterExecutionStepNotFoundError, DagsterInvalidSubsetError
+from dagster._core.errors import (
+    DagsterExecutionStepNotFoundError,
+    DagsterInvalidSubsetError,
+)
 from dagster._utils import check
 
 if TYPE_CHECKING:
@@ -38,7 +41,9 @@ MAX_NUM = sys.maxsize
 T = TypeVar("T")
 T_Hashable = TypeVar("T_Hashable", bound=Hashable)
 Direction: TypeAlias = Literal["downstream", "upstream"]
-DependencyGraph: TypeAlias = Mapping[Direction, Mapping[T_Hashable, AbstractSet[T_Hashable]]]
+DependencyGraph: TypeAlias = Mapping[
+    Direction, Mapping[T_Hashable, AbstractSet[T_Hashable]]
+]
 
 
 class OpSelectionData(
@@ -74,7 +79,9 @@ class OpSelectionData(
             resolved_op_selection=check.set_param(
                 resolved_op_selection, "resolved_op_selection", str
             ),
-            parent_job_def=check.inst_param(parent_job_def, "parent_job_def", JobDefinition),
+            parent_job_def=check.inst_param(
+                parent_job_def, "parent_job_def", JobDefinition
+            ),
         )
 
 
@@ -106,9 +113,13 @@ class AssetSelectionData(
 
         return super(AssetSelectionData, cls).__new__(
             cls,
-            asset_selection=check.opt_set_param(asset_selection, "asset_selection", AssetKey),
+            asset_selection=check.opt_set_param(
+                asset_selection, "asset_selection", AssetKey
+            ),
             asset_check_selection=asset_check_selection,
-            parent_job_def=check.inst_param(parent_job_def, "parent_job_def", JobDefinition),
+            parent_job_def=check.inst_param(
+                parent_job_def, "parent_job_def", JobDefinition
+            ),
         )
 
 
@@ -124,7 +135,9 @@ def generate_asset_dep_graph(
             # for each asset upstream of this one, set that as upstream, and this downstream of it
             for upstream_key in assets_def.asset_deps[asset_key]:
                 upstream[asset_key].add(upstream_key)
-                downstream[upstream_key] = downstream.get(upstream_key, set()) | {asset_key}
+                downstream[upstream_key] = downstream.get(upstream_key, set()) | {
+                    asset_key
+                }
     return {"upstream": upstream, "downstream": downstream}
 
 
@@ -159,16 +172,23 @@ def generate_dep_graph(job_def: "GraphDefinition") -> DependencyGraph[str]:
     item_names = [i.name for i in job_def.nodes]
 
     # defaultdict isn't appropriate because we also want to include items without dependencies
-    graph: Dict[Direction, Dict[str, MutableSet[str]]] = {"upstream": {}, "downstream": {}}
+    graph: Dict[Direction, Dict[str, MutableSet[str]]] = {
+        "upstream": {},
+        "downstream": {},
+    }
     for item_name in item_names:
         graph["upstream"][item_name] = set()
-        upstream_dep = dependency_structure.input_to_upstream_outputs_for_node(item_name)
+        upstream_dep = dependency_structure.input_to_upstream_outputs_for_node(
+            item_name
+        )
         for upstreams in upstream_dep.values():
             for up in upstreams:
                 graph["upstream"][item_name].add(up.node_name)
 
         graph["downstream"][item_name] = set()
-        downstream_dep = dependency_structure.output_to_downstream_inputs_for_node(item_name)
+        downstream_dep = dependency_structure.output_to_downstream_inputs_for_node(
+            item_name
+        )
         for downstreams in downstream_dep.values():
             for down in downstreams:
                 graph["downstream"][item_name].add(down.node_name)
@@ -204,11 +224,15 @@ class Traverser(Generic[T_Hashable]):
             curr_depth += 1
         return result
 
-    def fetch_upstream(self, item_name: T_Hashable, depth: int) -> AbstractSet[T_Hashable]:
+    def fetch_upstream(
+        self, item_name: T_Hashable, depth: int
+    ) -> AbstractSet[T_Hashable]:
         # return a set of ancestors of the given item, up to the given depth
         return self._fetch_items(item_name, depth, "upstream")
 
-    def fetch_downstream(self, item_name: T_Hashable, depth: int) -> AbstractSet[T_Hashable]:
+    def fetch_downstream(
+        self, item_name: T_Hashable, depth: int
+    ) -> AbstractSet[T_Hashable]:
         # return a set of descendants of the given item, down to the given depth
         return self._fetch_items(item_name, depth, "downstream")
 
@@ -254,12 +278,15 @@ def fetch_sources(
     def has_upstream_within_selection(node: T_Hashable) -> bool:
         if node not in dp:
             dp[node] = any(
-                parent_node in within_selection or has_upstream_within_selection(parent_node)
+                parent_node in within_selection
+                or has_upstream_within_selection(parent_node)
                 for parent_node in graph["upstream"].get(node, set()) - {node}
             )
         return dp[node]
 
-    return {node for node in within_selection if not has_upstream_within_selection(node)}
+    return {
+        node for node in within_selection if not has_upstream_within_selection(node)
+    }
 
 
 def fetch_connected_assets_definitions(
@@ -273,7 +300,9 @@ def fetch_connected_assets_definitions(
     depth = MAX_NUM if depth is None else depth
     names = [asset_key.to_user_string() for asset_key in asset.keys]
     connected_names = [
-        n for name in names for n in fetch_connected(name, graph, direction=direction, depth=depth)
+        n
+        for name in names
+        for n in fetch_connected(name, graph, direction=direction, depth=depth)
     ]
     return frozenset(name_to_definition_map[n] for n in connected_names)
 
@@ -286,21 +315,19 @@ class GraphSelectionClause(NamedTuple):
 
 def parse_clause(clause: str) -> Optional[GraphSelectionClause]:
     def _get_depth(part: str) -> int:
-        if part == "":
+        if not part:
             return 0
-        elif "*" in part:
+        if "*" in part:
             return MAX_NUM
-        elif set(part) == set("+"):
+        if part == "+" * len(part):
             return len(part)
-        else:
-            check.failed(f"Invalid clause part: {part}")
+        check.failed(f"Invalid clause part: {part}")
 
-    token_matching = re.compile(r"^(\*?\+*)?([./\w\d\[\]?_-]+)(\+*\*?)?$").search(clause.strip())
-    # return None if query is invalid
-    parts: Sequence[str] = token_matching.groups() if token_matching is not None else []
-    if len(parts) != 3:
+    token_matching = re.match(r"^(\*?\+*)?([./\w\d\[\]?_-]+)(\+*\*?)?$", clause.strip())
+    if not token_matching:
         return None
 
+    parts = token_matching.groups()
     ancestor_part, item_name, descendant_part = parts
     up_depth = _get_depth(ancestor_part)
     down_depth = _get_depth(descendant_part)
@@ -428,7 +455,9 @@ def parse_step_selection(
     check.sequence_param(step_selection, "step_selection", of_type=str)
     # reverse step_deps to get the downstream_deps
     # make sure we have all items as keys, including the ones without downstream dependencies
-    downstream_deps: Dict[str, Set[str]] = defaultdict(set, {k: set() for k in step_deps.keys()})
+    downstream_deps: Dict[str, Set[str]] = defaultdict(
+        set, {k: set() for k in step_deps.keys()}
+    )
     for downstream_key, upstream_keys in step_deps.items():
         for step_key in upstream_keys:
             downstream_deps[step_key].add(downstream_key)
