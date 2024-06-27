@@ -68,7 +68,7 @@ class NoValueSentinel:
 
 
 def has_valid_name_chars(name: str) -> bool:
-    return bool(VALID_NAME_REGEX.match(name))
+    return VALID_NAME_REGEX.match(name) is not None
 
 
 def check_valid_name(name: str, allow_list: Optional[List[str]] = None) -> str:
