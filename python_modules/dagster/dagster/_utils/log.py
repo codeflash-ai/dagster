@@ -218,7 +218,10 @@ def default_date_format_string() -> str:
 
 
 def define_default_formatter() -> logging.Formatter:
-    return logging.Formatter(default_format_string(), default_date_format_string())
+    # Store format strings in variables to avoid redundant function calls
+    fmt = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    datefmt = "%Y-%m-%d %H:%M:%S %z"
+    return logging.Formatter(fmt, datefmt)
 
 
 def get_structlog_shared_processors():
@@ -342,3 +345,13 @@ def create_console_logger(name: str, level: Union[str, int]) -> logging.Logger:
         level_styles={"debug": {}, "error": {"color": "red"}},
     )
     return logger
+
+
+def default_format_string() -> str:
+    # Move the format string directly into the formatter initialization
+    return "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+
+def default_date_format_string() -> str:
+    # Move the date format string directly into the formatter initialization
+    return "%Y-%m-%d %H:%M:%S %z"
