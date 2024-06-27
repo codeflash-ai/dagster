@@ -232,7 +232,7 @@ VALID_DEFINITION_TAG_VALUE_REGEX = re.compile(VALID_DEFINITION_TAG_VALUE_REGEX_S
 
 
 def is_valid_definition_tag_key(key: str) -> bool:
-    return bool(VALID_DEFINITION_TAG_KEY_REGEX.match(key))
+    return VALID_DEFINITION_TAG_KEY_REGEX.match(key) is not None
 
 
 def is_valid_definition_tag_value(key: str) -> bool:
