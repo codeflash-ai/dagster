@@ -240,32 +240,29 @@ def is_valid_definition_tag_value(key: str) -> bool:
 
 
 def validate_tags_strict(tags: Optional[Mapping[str, str]]) -> Optional[Mapping[str, str]]:
-    if tags is None:
-        return tags
-
-    for key, value in tags.items():
-        validate_tag_strict(key, value)
-
+    if tags is not None:
+        for key, value in tags.items():
+            validate_tag_strict(key, value)
     return tags
 
 
 def validate_tag_strict(key: str, value: str) -> None:
-    if not isinstance(key, str):
-        raise DagsterInvalidDefinitionError("Tag keys must be strings")
+    if not (isinstance(key, str) and isinstance(value, str)):
+        raise DagsterInvalidDefinitionError("Tag keys and values must be strings")
 
-    if not isinstance(value, str):
-        raise DagsterInvalidDefinitionError("Tag values must be strings")
+    invalid_key = not is_valid_definition_tag_key(key)
+    invalid_value = not is_valid_definition_tag_value(value)
 
-    if not is_valid_definition_tag_key(key):
-        raise DagsterInvalidDefinitionError(
-            f"Invalid tag key: {key}. {VALID_DEFINITION_TAG_KEY_EXPLANATION}"
-        )
-
-    if not is_valid_definition_tag_value(value):
-        raise DagsterInvalidDefinitionError(
-            f"Invalid tag value: {value}, for key: {key}. Allowed characters: alpha-numeric, '_', '-', '.'. "
-            "Must have <= 63 characters."
-        )
+    if invalid_key or invalid_value:
+        if invalid_key:
+            raise DagsterInvalidDefinitionError(
+                f"Invalid tag key: {key}. {VALID_DEFINITION_TAG_KEY_EXPLANATION}"
+            )
+        else:
+            raise DagsterInvalidDefinitionError(
+                f"Invalid tag value: {value}, for key: {key}. Allowed characters: alpha-numeric, '_', '-', '.'. "
+                "Must have <= 63 characters."
+            )
 
 
 def validate_asset_owner(owner: str, key: "AssetKey") -> None:
@@ -393,3 +390,22 @@ def config_from_pkg_resources(pkg_resource_defs: Sequence[Tuple[str, str]]) -> M
         ) from err
 
     return config_from_yaml_strings(yaml_strings=yaml_strings)
+
+
+def validate_tag_strict(key: str, value: str) -> None:
+    if not (isinstance(key, str) and isinstance(value, str)):
+        raise DagsterInvalidDefinitionError("Tag keys and values must be strings")
+
+    invalid_key = not is_valid_definition_tag_key(key)
+    invalid_value = not is_valid_definition_tag_value(value)
+
+    if invalid_key or invalid_value:
+        if invalid_key:
+            raise DagsterInvalidDefinitionError(
+                f"Invalid tag key: {key}. {VALID_DEFINITION_TAG_KEY_EXPLANATION}"
+            )
+        else:
+            raise DagsterInvalidDefinitionError(
+                f"Invalid tag value: {value}, for key: {key}. Allowed characters: alpha-numeric, '_', '-', '.'. "
+                "Must have <= 63 characters."
+            )
