@@ -236,7 +236,7 @@ def is_valid_definition_tag_key(key: str) -> bool:
 
 
 def is_valid_definition_tag_value(key: str) -> bool:
-    return bool(VALID_DEFINITION_TAG_VALUE_REGEX.match(key))
+    return VALID_DEFINITION_TAG_VALUE_REGEX.match(key) is not None
 
 
 def validate_tags_strict(tags: Optional[Mapping[str, str]]) -> Optional[Mapping[str, str]]:
