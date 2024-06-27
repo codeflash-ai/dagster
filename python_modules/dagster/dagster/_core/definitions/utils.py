@@ -139,8 +139,8 @@ def is_valid_title(title: Optional[str]) -> bool:
     return is_valid_title_and_reason(title)[0]
 
 
-def is_valid_title_chars(title: str):
-    return not bool(INVALID_TITLE_CHARACTERS_REGEX.search(title))
+def is_valid_title_chars(title: str) -> bool:
+    return INVALID_TITLE_CHARACTERS_REGEX.search(title) is None
 
 
 def _kv_str(key: object, value: object) -> str:
