@@ -157,7 +157,9 @@ class NormalizedTags(NamedTuple):
     tags: Mapping[str, str]
 
     def with_normalized_tags(self, normalized_tags: "NormalizedTags") -> "NormalizedTags":
-        return NormalizedTags({**self.tags, **normalized_tags.tags})
+        combined_tags = self.tags.copy()
+        combined_tags.update(normalized_tags.tags)
+        return NormalizedTags(combined_tags)
 
 
 def normalize_tags(
