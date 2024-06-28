@@ -17,6 +17,7 @@ from typing_extensions import Final
 
 from dagster import _check as check
 from dagster._annotations import deprecated, experimental
+from dagster._core.definitions.events import AssetKey
 from dagster._utils.cached_method import cached_method
 
 if TYPE_CHECKING:
@@ -152,21 +153,31 @@ class DataProvenance(
         code_version = tags.get(CODE_VERSION_TAG)
         if code_version is None:
             return None
-        input_data_versions = {
-            _asset_key_from_tag(k): DataVersion(v)
-            for k, v in tags.items()
-            if k.startswith(INPUT_DATA_VERSION_TAG_PREFIX)
-            or k.startswith(_OLD_INPUT_DATA_VERSION_TAG_PREFIX)
-        }
-        input_storage_ids = {
-            _asset_key_from_tag(k): int(v) if v != NULL_EVENT_POINTER else None
-            for k, v in tags.items()
-            if k.startswith(INPUT_EVENT_POINTER_TAG_PREFIX)
-        }
+
+        input_data_versions = {}
+        input_storage_ids = {}
+
+        for k, v in tags.items():
+            asset_key = _asset_key_from_tag(k)
+            if k.startswith(INPUT_DATA_VERSION_TAG_PREFIX) or k.startswith(
+                _OLD_INPUT_DATA_VERSION_TAG_PREFIX
+            ):
+                input_data_versions[asset_key] = DataVersion(v)
+            elif k.startswith(INPUT_EVENT_POINTER_TAG_PREFIX):
+                input_storage_ids[asset_key] = int(v) if v != NULL_EVENT_POINTER else None
+
         is_user_provided = tags.get(DATA_VERSION_IS_USER_PROVIDED_TAG) == "true"
         return DataProvenance(
             code_version, input_data_versions, input_storage_ids, is_user_provided
         )
+
+    @property
+    @deprecated(breaking_version="2.0", additional_warn_text="Use `input_data_versions` instead.")
+    def input_logical_versions(self) -> Mapping["AssetKey", DataVersion]:
+        return self.input_data_versions
+
+    def has_input_asset(self, key: "AssetKey") -> bool:
+        return key in self.input_data_versions and key in self.input_storage_ids
 
     @property
     @deprecated(breaking_version="2.0", additional_warn_text="Use `input_data_versions` instead.")
