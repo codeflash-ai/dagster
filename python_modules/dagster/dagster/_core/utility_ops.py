@@ -55,5 +55,5 @@ def create_op_with_deps(name: str, *op_deps: OpDefinition):
     )
 
 
-def input_set(name: str) -> Mapping[str, str]:
+def input_set(name: str) -> dict[str, str]:
     return {name: "input_set"}
