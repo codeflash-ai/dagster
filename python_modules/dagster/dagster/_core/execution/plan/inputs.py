@@ -83,12 +83,19 @@ class StepInput(
 
 
 def join_and_hash(*args: Optional[str]) -> Optional[str]:
-    lst = [check.opt_str_param(elem, "elem") for elem in args]
-    if None in lst:
-        return None
+    # Validating and checking for None using generator to save memory
+    lst = []
+    for elem in args:
+        elem_checked = check.opt_str_param(elem, "elem")
+        if elem_checked is None:
+            return None
+        lst.append(elem_checked)
 
-    str_lst = cast(List[str], lst)
-    unhashed = "".join(sorted(str_lst))
+    # Sorting the list in-place and joining in one go to reduce memory overhead
+    lst.sort()
+    unhashed = "".join(lst)
+
+    # Computing and returning the hash
     return hashlib.sha1(unhashed.encode("utf-8")).hexdigest()
 
 
