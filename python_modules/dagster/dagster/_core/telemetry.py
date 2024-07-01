@@ -421,7 +421,7 @@ def get_or_set_instance_id() -> str:
     return instance_id
 
 
-# Assuming TELEMETRY_STR, INSTANCE_ID_STR, TELEMETRY_TEXT, SLACK_PROMPT are defined somewhere
+# Gets the instance_id at $DAGSTER_HOME/.telemetry/id.yaml
 
 
 def _get_telemetry_instance_id() -> Optional[str]:
