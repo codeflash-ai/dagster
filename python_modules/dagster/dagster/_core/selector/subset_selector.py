@@ -159,7 +159,10 @@ def generate_dep_graph(job_def: "GraphDefinition") -> DependencyGraph[str]:
     item_names = [i.name for i in job_def.nodes]
 
     # defaultdict isn't appropriate because we also want to include items without dependencies
-    graph: Dict[Direction, Dict[str, MutableSet[str]]] = {"upstream": {}, "downstream": {}}
+    graph: Dict[Direction, Dict[str, MutableSet[str]]] = {
+        "upstream": {},
+        "downstream": {},
+    }
     for item_name in item_names:
         graph["upstream"][item_name] = set()
         upstream_dep = dependency_structure.input_to_upstream_outputs_for_node(item_name)
@@ -185,23 +188,19 @@ class Traverser(Generic[T_Hashable]):
         self, item_name: T_Hashable, depth: int, direction: Direction
     ) -> AbstractSet[T_Hashable]:
         dep_graph = self.graph[direction]
-        stack = deque([item_name])
+        stack = deque([(item_name, 0)])  # store tuples of (node, current_depth)
         result: Set[T_Hashable] = set()
-        curr_depth = 0
+        result_add = result.add  # localize method reference for optimization
+
         while stack:
-            # stop when reach the given depth
+            curr_item, curr_depth = stack.popleft()  # unpack the tuple
             if curr_depth >= depth:
-                break
-            curr_level_len = len(stack)
-            while stack and curr_level_len > 0:
-                curr_item = stack.popleft()
-                curr_level_len -= 1
-                empty_set: Set[T_Hashable] = set()
-                for item in dep_graph.get(curr_item, empty_set):
-                    if item not in result:
-                        stack.append(item)
-                        result.add(item)
-            curr_depth += 1
+                continue
+            empty_set: Set[T_Hashable] = set()
+            for item in dep_graph.get(curr_item, empty_set):
+                if item not in result:
+                    stack.append((item, curr_depth + 1))  # increase depth by 1
+                    result_add(item)
         return result
 
     def fetch_upstream(self, item_name: T_Hashable, depth: int) -> AbstractSet[T_Hashable]:
