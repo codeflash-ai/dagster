@@ -159,7 +159,10 @@ def generate_dep_graph(job_def: "GraphDefinition") -> DependencyGraph[str]:
     item_names = [i.name for i in job_def.nodes]
 
     # defaultdict isn't appropriate because we also want to include items without dependencies
-    graph: Dict[Direction, Dict[str, MutableSet[str]]] = {"upstream": {}, "downstream": {}}
+    graph: Dict[Direction, Dict[str, MutableSet[str]]] = {
+        "upstream": {},
+        "downstream": {},
+    }
     for item_name in item_names:
         graph["upstream"][item_name] = set()
         upstream_dep = dependency_structure.input_to_upstream_outputs_for_node(item_name)
@@ -252,12 +255,14 @@ def fetch_sources(
     dp: Dict[T_Hashable, bool] = {}
 
     def has_upstream_within_selection(node: T_Hashable) -> bool:
-        if node not in dp:
-            dp[node] = any(
-                parent_node in within_selection or has_upstream_within_selection(parent_node)
-                for parent_node in graph["upstream"].get(node, set()) - {node}
-            )
-        return dp[node]
+        if node in dp:
+            return dp[node]
+        for parent_node in graph["upstream"].get(node, set()) - {node}:
+            if parent_node in within_selection or has_upstream_within_selection(parent_node):
+                dp[node] = True
+                return True
+        dp[node] = False
+        return False
 
     return {node for node in within_selection if not has_upstream_within_selection(node)}
 
