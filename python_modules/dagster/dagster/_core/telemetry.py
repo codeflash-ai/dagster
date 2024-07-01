@@ -433,7 +433,7 @@ def _get_telemetry_instance_id() -> Optional[str]:
         telemetry_id_yaml = yaml.safe_load(telemetry_id_file)
         return (
             telemetry_id_yaml.get(INSTANCE_ID_STR)
-            if isinstance(telemetry_id_yaml.get(INSTANCE_ID_STR), str)
+            if telemetry_id_yaml and isinstance(telemetry_id_yaml.get(INSTANCE_ID_STR), str)
             else None
         )
 
@@ -773,35 +773,6 @@ def log_dagster_event(event: DagsterEvent, job_context: PlanOrchestrationContext
 
 
 # Assuming TELEMETRY_STR, INSTANCE_ID_STR, TELEMETRY_TEXT, SLACK_PROMPT are defined somewhere
-
-
-def _get_telemetry_instance_id() -> Optional[str]:
-    telemetry_id_path = os.path.join(get_or_create_dir_from_dagster_home(TELEMETRY_STR), "id.yaml")
-    if not os.path.exists(telemetry_id_path):
-        return None
-
-    with open(telemetry_id_path, "r", encoding="utf8") as telemetry_id_file:
-        telemetry_id_yaml = yaml.safe_load(telemetry_id_file)
-        return (
-            telemetry_id_yaml.get(INSTANCE_ID_STR)
-            if isinstance(telemetry_id_yaml.get(INSTANCE_ID_STR), str)
-            else None
-        )
-
-
-def _set_telemetry_instance_id() -> str:
-    click.secho(TELEMETRY_TEXT)
-    click.secho(SLACK_PROMPT)
-
-    telemetry_id_path = os.path.join(get_or_create_dir_from_dagster_home(TELEMETRY_STR), "id.yaml")
-    instance_id = str(uuid.uuid4())
-
-    try:
-        with open(telemetry_id_path, "w", encoding="utf8") as telemetry_id_file:
-            yaml.dump({INSTANCE_ID_STR: instance_id}, telemetry_id_file, default_flow_style=False)
-        return instance_id
-    except Exception:
-        return "<<unable_to_write_instance_id>>"
 
 
 TELEMETRY_TEXT = """
