@@ -59,10 +59,7 @@ from dagster._core.run_coordinator import RunCoordinator, SubmitRunContext
 from dagster._core.secrets import SecretsLoader
 from dagster._core.storage.dagster_run import DagsterRun, DagsterRunStatus, RunsFilter
 from dagster._core.types.loadable_target_origin import LoadableTargetOrigin
-from dagster._core.workspace.context import (
-    WorkspaceProcessContext,
-    WorkspaceRequestContext,
-)
+from dagster._core.workspace.context import WorkspaceProcessContext, WorkspaceRequestContext
 from dagster._core.workspace.load_target import WorkspaceLoadTarget
 from dagster._serdes import ConfigurableClass
 from dagster._serdes.config_class import ConfigurableClassData
@@ -109,9 +106,7 @@ def step_output_event_filter(pipe_iterator: Iterator[DagsterEvent]):
             yield step_event
 
 
-def nesting_graph(
-    depth: int, num_children: int, name: Optional[str] = None
-) -> GraphDefinition:
+def nesting_graph(depth: int, num_children: int, name: Optional[str] = None) -> GraphDefinition:
     """Creates a job of nested graphs up to "depth" layers, with a fan-out of
     num_children at each layer.
 
@@ -272,9 +267,7 @@ def poll_for_finished_run(
 
 
 def poll_for_step_start(instance: DagsterInstance, run_id: str, timeout: float = 30):
-    poll_for_event(
-        instance, run_id, event_type="STEP_START", message=None, timeout=timeout
-    )
+    poll_for_event(instance, run_id, event_type="STEP_START", message=None, timeout=timeout)
 
 
 def poll_for_event(
@@ -394,9 +387,7 @@ class MockedRunLauncher(RunLauncher, ConfigurableClass):
             raise Exception(f"Bad run {run.run_id}")
 
         if run.run_id in self.bad_user_code_run_ids:
-            raise DagsterUserCodeUnreachableError(
-                f"User code error launching run {run.run_id}"
-            )
+            raise DagsterUserCodeUnreachableError(f"User code error launching run {run.run_id}")
 
         self._queue.append(run)
         self._launched_run_ids.add(run.run_id)
@@ -464,9 +455,7 @@ class MockedRunCoordinator(RunCoordinator, ConfigurableClass):
 
 
 class TestSecretsLoader(SecretsLoader, ConfigurableClass):
-    def __init__(
-        self, inst_data: Optional[ConfigurableClassData], env_vars: Dict[str, str]
-    ):
+    def __init__(self, inst_data: Optional[ConfigurableClassData], env_vars: Dict[str, str]):
         self._inst_data = inst_data
         self.env_vars = env_vars
 
@@ -496,9 +485,7 @@ def get_crash_signals() -> Sequence[Signals]:
 class InProcessTestWorkspaceLoadTarget(WorkspaceLoadTarget):
     def __init__(
         self,
-        origin: Union[
-            InProcessCodeLocationOrigin, Sequence[InProcessCodeLocationOrigin]
-        ],
+        origin: Union[InProcessCodeLocationOrigin, Sequence[InProcessCodeLocationOrigin]],
     ):
         self._origins = cast(
             Sequence[InProcessCodeLocationOrigin],
@@ -581,17 +568,13 @@ def get_logger_output_from_capfd(capfd: Any, logger_name: str) -> str:
     return "\n".join(
         [
             line
-            for line in strip_ansi(capfd.readouterr().out.replace("\r\n", "\n")).split(
-                "\n"
-            )
+            for line in strip_ansi(capfd.readouterr().out.replace("\r\n", "\n")).split("\n")
             if logger_name in line
         ]
     )
 
 
-def _step_events(
-    instance: DagsterInstance, run: DagsterRun
-) -> Mapping[str, AbstractSet[str]]:
+def _step_events(instance: DagsterInstance, run: DagsterRun) -> Mapping[str, AbstractSet[str]]:
     events_by_step = defaultdict(set)
     logs = instance.all_logs(run.run_id)
     for record in logs:
@@ -601,9 +584,7 @@ def _step_events(
     return events_by_step
 
 
-def step_did_not_run(
-    instance: DagsterInstance, run: DagsterRun, step_name: str
-) -> bool:
+def step_did_not_run(instance: DagsterInstance, run: DagsterRun, step_name: str) -> bool:
     step_events = _step_events(instance, run)[step_name]
     return len(step_events) == 0
 
@@ -745,9 +726,7 @@ def raise_exception_on_warnings():
 
     if sys.version_info >= (3, 12):
         # pendulum sometimes raises DeprecationWarning on python3.12
-        warnings.filterwarnings(
-            "ignore", category=DeprecationWarning, module="pendulum"
-        )
+        warnings.filterwarnings("ignore", category=DeprecationWarning, module="pendulum")
 
 
 def ensure_dagster_tests_import() -> None:
@@ -791,7 +770,5 @@ def freeze_time(new_now: Union[datetime.datetime, float]):
         "dagster._time._mockable_get_current_datetime", return_value=new_dt
     ), unittest.mock.patch(
         "dagster._time._mockable_get_current_timestamp", return_value=new_dt.timestamp()
-    ), pendulum_freeze_time(
-        new_pendulum_dt
-    ):
+    ), pendulum_freeze_time(new_pendulum_dt):
         yield
