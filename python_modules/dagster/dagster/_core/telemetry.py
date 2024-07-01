@@ -425,20 +425,17 @@ def get_or_set_instance_id() -> str:
 def _get_telemetry_instance_id() -> Optional[str]:
     telemetry_id_path = os.path.join(get_or_create_dir_from_dagster_home(TELEMETRY_STR), "id.yaml")
     if not os.path.exists(telemetry_id_path):
-        return
+        return None
 
     with open(telemetry_id_path, "r", encoding="utf8") as telemetry_id_file:
         telemetry_id_yaml = yaml.safe_load(telemetry_id_file)
-        if (
-            telemetry_id_yaml
-            and INSTANCE_ID_STR in telemetry_id_yaml
-            and isinstance(telemetry_id_yaml[INSTANCE_ID_STR], str)
-        ):
-            return telemetry_id_yaml[INSTANCE_ID_STR]
-    return None
+        return (
+            telemetry_id_yaml.get(INSTANCE_ID_STR)
+            if telemetry_id_yaml and isinstance(telemetry_id_yaml.get(INSTANCE_ID_STR), str)
+            else None
+        )
 
 
-# Sets the instance_id at $DAGSTER_HOME/.telemetry/id.yaml
 def _set_telemetry_instance_id() -> str:
     click.secho(TELEMETRY_TEXT)
     click.secho(SLACK_PROMPT)
@@ -446,7 +443,7 @@ def _set_telemetry_instance_id() -> str:
     telemetry_id_path = os.path.join(get_or_create_dir_from_dagster_home(TELEMETRY_STR), "id.yaml")
     instance_id = str(uuid.uuid4())
 
-    try:  # In case we encounter an error while writing to user's file system
+    try:
         with open(telemetry_id_path, "w", encoding="utf8") as telemetry_id_file:
             yaml.dump({INSTANCE_ID_STR: instance_id}, telemetry_id_file, default_flow_style=False)
         return instance_id
