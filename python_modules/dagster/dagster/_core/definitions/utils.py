@@ -109,10 +109,12 @@ def is_valid_title_and_reason(title: Optional[str]) -> Tuple[bool, Optional[str]
     if title is None:
         return True, None
 
-    if len(title) > MAX_TITLE_LENGTH:
+    title_len = len(title)
+
+    if title_len > MAX_TITLE_LENGTH:
         return (
             False,
-            f'"{title}" ({len(title)} characters) is not a valid title in Dagster. Titles must not be longer than {MAX_TITLE_LENGTH}.',
+            f'"{title}" ({title_len} characters) is not a valid title in Dagster. Titles must not be longer than {MAX_TITLE_LENGTH}.',
         )
 
     if not is_valid_title_chars(title):
@@ -136,7 +138,15 @@ def check_valid_title(title: Optional[str]) -> Optional[str]:
 
 
 def is_valid_title(title: Optional[str]) -> bool:
-    return is_valid_title_and_reason(title)[0]
+    if title is None:
+        return True
+
+    title_len = len(title)
+
+    if title_len > MAX_TITLE_LENGTH or not is_valid_title_chars(title):
+        return False
+
+    return True
 
 
 def is_valid_title_chars(title: str):
@@ -393,3 +403,4 @@ def config_from_pkg_resources(pkg_resource_defs: Sequence[Tuple[str, str]]) -> M
         ) from err
 
     return config_from_yaml_strings(yaml_strings=yaml_strings)
+
