@@ -214,7 +214,9 @@ def register_managed_run_for_test(
 
 
 def wait_for_runs_to_finish(
-    instance: DagsterInstance, timeout: float = 20, run_tags: Optional[Mapping[str, str]] = None
+    instance: DagsterInstance,
+    timeout: float = 20,
+    run_tags: Optional[Mapping[str, str]] = None,
 ) -> None:
     total_time = 0
     interval = 0.1
@@ -482,7 +484,8 @@ def get_crash_signals() -> Sequence[Signals]:
 # Test utility for creating a test workspace for a function
 class InProcessTestWorkspaceLoadTarget(WorkspaceLoadTarget):
     def __init__(
-        self, origin: Union[InProcessCodeLocationOrigin, Sequence[InProcessCodeLocationOrigin]]
+        self,
+        origin: Union[InProcessCodeLocationOrigin, Sequence[InProcessCodeLocationOrigin]],
     ):
         self._origins = cast(
             Sequence[InProcessCodeLocationOrigin],
@@ -531,17 +534,24 @@ def create_test_daemon_workspace_context(
 
 def remove_none_recursively(obj: T) -> T:
     """Remove none values from a dict. This can be used to support comparing provided config vs.
-    config we retrive from kubernetes, which returns all fields, even those which have no value
+    config we retrieve from kubernetes, which returns all fields, even those which have no value
     configured.
     """
-    if isinstance(obj, (list, tuple, set)):
-        return type(obj)(remove_none_recursively(x) for x in obj if x is not None)
-    elif isinstance(obj, dict):
-        return type(obj)(
-            (remove_none_recursively(k), remove_none_recursively(v))
+    # Optimize the base case check to avoid repeated isinstance calls
+    obj_type = type(obj)
+
+    if obj_type is dict:
+        return {
+            remove_none_recursively(k): remove_none_recursively(v)
             for k, v in obj.items()
             if k is not None and v is not None
-        )
+        }
+    elif obj_type is list:
+        return [remove_none_recursively(x) for x in obj if x is not None]
+    elif obj_type is tuple:
+        return tuple(remove_none_recursively(x) for x in obj if x is not None)
+    elif obj_type is set:
+        return {remove_none_recursively(x) for x in obj if x is not None}
     else:
         return obj
 
