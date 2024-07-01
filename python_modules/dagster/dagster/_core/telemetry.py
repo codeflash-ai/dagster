@@ -422,8 +422,6 @@ def get_or_set_instance_id() -> str:
 
 
 # Gets the instance_id at $DAGSTER_HOME/.telemetry/id.yaml
-
-
 def _get_telemetry_instance_id() -> Optional[str]:
     telemetry_id_path = os.path.join(get_or_create_dir_from_dagster_home(TELEMETRY_STR), "id.yaml")
     if not os.path.exists(telemetry_id_path):
