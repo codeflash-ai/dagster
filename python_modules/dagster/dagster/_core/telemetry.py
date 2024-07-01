@@ -770,9 +770,6 @@ def log_dagster_event(event: DagsterEvent, job_context: PlanOrchestrationContext
     )
 
 
-# Assuming TELEMETRY_STR, INSTANCE_ID_STR, TELEMETRY_TEXT, SLACK_PROMPT are defined somewhere
-
-
 TELEMETRY_TEXT = """
   %(telemetry)s
 
