@@ -159,7 +159,10 @@ def generate_dep_graph(job_def: "GraphDefinition") -> DependencyGraph[str]:
     item_names = [i.name for i in job_def.nodes]
 
     # defaultdict isn't appropriate because we also want to include items without dependencies
-    graph: Dict[Direction, Dict[str, MutableSet[str]]] = {"upstream": {}, "downstream": {}}
+    graph: Dict[Direction, Dict[str, MutableSet[str]]] = {
+        "upstream": {},
+        "downstream": {},
+    }
     for item_name in item_names:
         graph["upstream"][item_name] = set()
         upstream_dep = dependency_structure.input_to_upstream_outputs_for_node(item_name)
@@ -286,21 +289,19 @@ class GraphSelectionClause(NamedTuple):
 
 def parse_clause(clause: str) -> Optional[GraphSelectionClause]:
     def _get_depth(part: str) -> int:
-        if part == "":
+        if not part:
             return 0
-        elif "*" in part:
+        if "*" in part:
             return MAX_NUM
-        elif set(part) == set("+"):
+        if part == "+" * len(part):
             return len(part)
-        else:
-            check.failed(f"Invalid clause part: {part}")
+        check.failed(f"Invalid clause part: {part}")
 
-    token_matching = re.compile(r"^(\*?\+*)?([./\w\d\[\]?_-]+)(\+*\*?)?$").search(clause.strip())
-    # return None if query is invalid
-    parts: Sequence[str] = token_matching.groups() if token_matching is not None else []
-    if len(parts) != 3:
+    token_matching = re.match(r"^(\*?\+*)?([./\w\d\[\]?_-]+)(\+*\*?)?$", clause.strip())
+    if not token_matching:
         return None
 
+    parts = token_matching.groups()
     ancestor_part, item_name, descendant_part = parts
     up_depth = _get_depth(ancestor_part)
     down_depth = _get_depth(descendant_part)
