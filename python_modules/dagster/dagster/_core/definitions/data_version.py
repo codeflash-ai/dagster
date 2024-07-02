@@ -17,7 +17,6 @@ from typing_extensions import Final
 
 from dagster import _check as check
 from dagster._annotations import deprecated, experimental
-from dagster._core.definitions.events import AssetKey
 from dagster._utils.cached_method import cached_method
 
 if TYPE_CHECKING:
@@ -170,14 +169,6 @@ class DataProvenance(
         return DataProvenance(
             code_version, input_data_versions, input_storage_ids, is_user_provided
         )
-
-    @property
-    @deprecated(breaking_version="2.0", additional_warn_text="Use `input_data_versions` instead.")
-    def input_logical_versions(self) -> Mapping["AssetKey", DataVersion]:
-        return self.input_data_versions
-
-    def has_input_asset(self, key: "AssetKey") -> bool:
-        return key in self.input_data_versions and key in self.input_storage_ids
 
     @property
     @deprecated(breaking_version="2.0", additional_warn_text="Use `input_data_versions` instead.")
