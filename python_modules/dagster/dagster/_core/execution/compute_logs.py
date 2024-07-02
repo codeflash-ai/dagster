@@ -157,14 +157,7 @@ def _clean_up_subprocess(subprocess_obj):
 
 def _fileno(stream):
     try:
-        fd = getattr(stream, "fileno", lambda: stream)()
-    except io.UnsupportedOperation:
-        # Test CLI runners will stub out stdout to a non-file stream, which will raise an
-        # UnsupportedOperation if `fileno` is accessed.  We need to make sure we do not error out,
-        # or tests will fail
+        return stream.fileno()
+    except (io.UnsupportedOperation, AttributeError):
+        # Handle unsupported operations or missing attributes gracefully
         return None
-
-    if isinstance(fd, int):
-        return fd
-
-    return None
