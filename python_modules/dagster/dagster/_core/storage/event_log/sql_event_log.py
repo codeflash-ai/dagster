@@ -120,13 +120,11 @@ DEFAULT_MAX_LIMIT_EVENT_RECORDS = 10000
 
 
 def get_max_event_records_limit() -> int:
-    max_value = os.getenv("MAX_LIMIT_GET_EVENT_RECORDS")
-    if not max_value:
-        return DEFAULT_MAX_LIMIT_EVENT_RECORDS
     try:
-        return int(max_value)
+        max_value = int(os.getenv("MAX_LIMIT_GET_EVENT_RECORDS", DEFAULT_MAX_LIMIT_EVENT_RECORDS))
     except ValueError:
         return DEFAULT_MAX_LIMIT_EVENT_RECORDS
+    return max_value
 
 
 def enforce_max_records_limit(limit: int):
