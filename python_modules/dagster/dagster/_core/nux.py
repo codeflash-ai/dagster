@@ -22,10 +22,10 @@ def set_nux_seen():
         return "<<unable_to_write_nux_seen>>"
 
 
-# Gets whether we've shown the Nux to any user on this instance
 def get_has_seen_nux():
     try:
-        # We only care about the existence of the file
-        return os.path.exists(nux_seen_filepath())
+        # Compute the file path once and reuse it
+        path = nux_seen_filepath()
+        return os.path.exists(path)
     except:
         return True
