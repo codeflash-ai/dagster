@@ -184,7 +184,7 @@ def compiles_get_sql_current_timestamp_default(_element, _compiler, **_kw) -> st
 
 @compiles(db.types.TIMESTAMP, "mysql")
 def add_precision_to_mysql_timestamps(_element, _compiler, **_kw) -> str:
-    return f"TIMESTAMP({MYSQL_DATE_PRECISION})"
+    return "TIMESTAMP(6)"
 
 
 @compiles(db.types.Float, "mysql")
