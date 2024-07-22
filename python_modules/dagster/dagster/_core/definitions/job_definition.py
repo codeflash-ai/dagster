@@ -38,6 +38,7 @@ from dagster._core.definitions.resource_requirement import (
     ResourceRequirement,
     ensure_requirements_satisfied,
 )
+from dagster._core.definitions.run_config import RunConfig
 from dagster._core.definitions.utils import check_valid_name
 from dagster._core.errors import (
     DagsterInvalidConfigError,
@@ -473,7 +474,7 @@ class JobDefinition(IHasInternalInit):
         return self._graph_def.dagster_type_named(name)
 
     def describe_target(self) -> str:
-        return f"job '{self.name}'"
+        return f"job '{self._name}'"
 
     def is_using_memoization(self, run_tags: Mapping[str, str]) -> bool:
         tags = merge_dicts(self.tags, run_tags)
