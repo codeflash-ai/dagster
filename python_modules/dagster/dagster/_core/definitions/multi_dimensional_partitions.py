@@ -2,19 +2,7 @@ import hashlib
 import itertools
 from datetime import datetime
 from functools import lru_cache, reduce
-from typing import (
-    Dict,
-    List,
-    Mapping,
-    NamedTuple,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-    Type,
-    Union,
-    cast,
-)
+from typing import List, Mapping, NamedTuple, Optional, Sequence, Set, Tuple, Type, Union, cast
 
 import pendulum
 
@@ -558,10 +546,10 @@ def get_tags_from_multi_partition_key(multi_partition_key: MultiPartitionKey) ->
 
 
 def get_multipartition_key_from_tags(tags: Mapping[str, str]) -> str:
-    partitions_by_dimension: Dict[str, str] = {}
-    for tag in tags:
-        if tag.startswith(MULTIDIMENSIONAL_PARTITION_PREFIX):
-            dimension = tag[len(MULTIDIMENSIONAL_PARTITION_PREFIX) :]
-            partitions_by_dimension[dimension] = tags[tag]
-
-    return MultiPartitionKey(partitions_by_dimension)
+    return MultiPartitionKey(
+        {
+            tag[len(MULTIDIMENSIONAL_PARTITION_PREFIX) :]: tags[tag]
+            for tag in tags
+            if tag.startswith(MULTIDIMENSIONAL_PARTITION_PREFIX)
+        }
+    )
