@@ -109,3 +109,8 @@ class NoOpComputeLogManager(CapturedLogManager, ComputeLogManager, ConfigurableC
 
     def unsubscribe(self, subscription: CapturedLogSubscription):
         pass
+
+
+# Util function to check if data has reached max
+def _has_max_data(data: Optional[str]) -> bool:
+    return data is not None and len(data) >= MAX_BYTES_CHUNK_READ
