@@ -92,7 +92,8 @@ class NoOpComputeLogManager(CapturedLogManager, ComputeLogManager, ConfigurableC
         cursor: Optional[str] = None,
         max_bytes: Optional[int] = None,
     ) -> CapturedLogData:
-        return CapturedLogData(log_key=log_key)
+        # Default values are already set to None, so no need to specify them
+        return CapturedLogData(log_key)
 
     def get_log_metadata(self, log_key: Sequence[str]) -> CapturedLogMetadata:
         return CapturedLogMetadata()
