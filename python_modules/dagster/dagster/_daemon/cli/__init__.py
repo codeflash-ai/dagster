@@ -28,9 +28,7 @@ from dagster._utils.interrupts import capture_interrupts
 
 
 def _get_heartbeat_tolerance():
-    tolerance = os.getenv(
-        "DAGSTER_DAEMON_HEARTBEAT_TOLERANCE",
-    )
+    tolerance = os.environ.get("DAGSTER_DAEMON_HEARTBEAT_TOLERANCE")
     return int(tolerance) if tolerance else DEFAULT_DAEMON_HEARTBEAT_TOLERANCE_SECONDS
 
 
