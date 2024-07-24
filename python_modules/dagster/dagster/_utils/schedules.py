@@ -78,8 +78,7 @@ def cron_string_repeats_every_hour(cron_string: str) -> bool:
 
 
 def apply_fold_and_post_transition(date: datetime.datetime) -> datetime.datetime:
-    date = apply_post_transition(date)
-    return _apply_fold(date)
+    return _apply_fold(apply_post_transition(date))
 
 
 def _apply_fold(date: datetime.datetime) -> datetime.datetime:
@@ -89,28 +88,17 @@ def _apply_fold(date: datetime.datetime) -> datetime.datetime:
 
     Never call this with datetimes that could be non-existant. datetime_ambiguous will return true
     but folding them will leave them non-existant.
-    """  # noqa: D415
+    """
     if date.fold == 0 and date.hour in DAYLIGHT_SAVINGS_HOURS and datetime_ambiguous(date):
         return date.replace(fold=1)
     return date
 
 
-def apply_post_transition(
-    date: datetime.datetime,
-) -> datetime.datetime:
+def apply_post_transition(date: datetime.datetime) -> datetime.datetime:
     if date.hour in DAYLIGHT_SAVINGS_HOURS and not datetime_exists(date):
-        # If we fall on a non-existant time (e.g. between 2 and 3AM during a DST transition)
-        # advance to the end of the window, which does exist - match behavior described in the docs:
-        # https://docs.dagster.io/concepts/partitions-schedules-sensors/schedules#execution-time-and-daylight-savings-time)
-
-        # This assumes that all dst offsets are <= to an hour, which is true at time of writing.
-        # The date passed to dst needs to be in DST to get the offset for the timezone.
-        dst_offset = check.not_none(date.tzinfo).dst(date + datetime.timedelta(hours=1))
-
-        # This assumes that all dst transitions happen on the hour, which is true at time of writing.
-        # Rewind time to the start of the transition and then add the offset to get the first time out of the transition.
+        dst_offset = date.tzinfo.dst(date + datetime.timedelta(hours=1))
         start_dst = date.replace(minute=0, second=0, microsecond=0)
-        return start_dst + check.not_none(dst_offset)
+        return start_dst + dst_offset
     return date
 
 
