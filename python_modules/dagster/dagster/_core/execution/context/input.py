@@ -4,9 +4,13 @@ from typing import TYPE_CHECKING, Any, Iterable, Iterator, List, Mapping, Option
 import dagster._check as check
 from dagster._annotations import deprecated, deprecated_param, public
 from dagster._core.definitions.events import AssetKey, AssetObservation, CoercibleToAssetKey
-from dagster._core.definitions.metadata import ArbitraryMetadataMapping, MetadataValue
+from dagster._core.definitions.metadata import (
+    ArbitraryMetadataMapping,
+    MetadataValue as DagsterMetadataValue,
+)
 from dagster._core.definitions.partition import PartitionsSubset
 from dagster._core.definitions.partition_key_range import PartitionKeyRange
+from dagster._core.definitions.resource_definition import Resources
 from dagster._core.definitions.time_window_partitions import TimeWindow
 from dagster._core.errors import DagsterInvariantViolationError
 from dagster._core.instance import DagsterInstance, DynamicPartitionsStore
@@ -522,7 +526,7 @@ class InputContext:
         """
         return self._observations
 
-    def consume_logged_metadata(self) -> Mapping[str, MetadataValue]:
+    def consume_logged_metadata(self) -> Mapping[str, DagsterMetadataValue]:
         """Pops and yields all user-generated metadata entries that have been recorded from this context.
 
         If consume_logged_metadata has not yet been called, this will yield all logged events since
