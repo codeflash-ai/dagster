@@ -566,30 +566,22 @@ def _timezone_aware_cron_iter(
 
 def _has_out_of_range_cron_interval_str(cron_string: str):
     assert CroniterShim.is_valid(cron_string)
-    try:
-        for i, cron_part in enumerate(cron_string.lower().split()):
-            expr_parts = cron_part.split(",")
-            while len(expr_parts) > 0:
-                expr = expr_parts.pop()
-                t = re.sub(
-                    r"^\*(\/.+)$", r"%d-%d\1" % (CRON_RANGES[i][0], CRON_RANGES[i][1]), str(expr)
-                )
-                m = CRON_STEP_SEARCH_REGEX.search(t)
-                if not m:
-                    # try normalizing "{start}/{step}" to "{start}-{max}/{step}".
-                    t = re.sub(r"^(.+)\/(.+)$", r"\1-%d/\2" % (CRON_RANGES[i][1]), str(expr))
-                    m = CRON_STEP_SEARCH_REGEX.search(t)
-                if m:
-                    (low, high, step) = m.group(1), m.group(2), m.group(4) or 1
-                    if i == 2 and high == "l":
-                        high = "31"
-                    if not INT_REGEX.search(low) or not INT_REGEX.search(high):
-                        continue
-                    low, high, step = map(int, [low, high, step])
-                    if step > high:
-                        return True
-    except:
-        pass
+    cron_parts = cron_string.lower().split()
+
+    for i, cron_part in enumerate(cron_parts):
+        expr_parts = cron_part.split(",")
+
+        for expr in expr_parts:
+            t, matched = CRON_STEP_SEARCH_REGEX.subn(
+                lambda m: f"{m.group(1) or CRON_RANGES[i][0]}-{m.group(2)}/{m.group(4) or 1}",
+                expr.replace("*", f"{CRON_RANGES[i][0]}-{CRON_RANGES[i][1]}"),
+            )
+            if matched:
+                (low, high, step) = map(int, t.split("/")[0].split("-") + [t.split("/")[1]])
+                if i == 2 and high == 31:  # converting "l" to 31 in days of month
+                    high = 31
+                if step > high:
+                    return True
     return False
 
 
@@ -600,11 +592,9 @@ def has_out_of_range_cron_interval(cron_schedule: Union[str, Sequence[str]]):
     function does not detect cases where the step does not divide cleanly in the range, which is
     another case that might cause some surprising behavior (e.g. '*/7 * * * *').
     """
-    return (
-        _has_out_of_range_cron_interval_str(cron_schedule)
-        if isinstance(cron_schedule, str)
-        else any(_has_out_of_range_cron_interval_str(s) for s in cron_schedule)
-    )
+    if isinstance(cron_schedule, str):
+        return _has_out_of_range_cron_interval_str(cron_schedule)
+    return any(_has_out_of_range_cron_interval_str(s) for s in cron_schedule)
 
 
 def cron_string_iterator(
