@@ -115,19 +115,15 @@ def apply_post_transition(
 
 
 def _replace_date_fields(
-    date: datetime.datetime,
-    hour: int,
-    minute: int,
-    day: int,
-):
-    new_date = date.replace(
-        day=day,
-        hour=hour,
-        minute=minute,
-        second=0,
-        microsecond=0,
+    date: datetime.datetime, hour: int, minute: int, day: int
+) -> datetime.datetime:
+    # Directly call `apply_post_transition` and `_apply_fold` on the new date created from `date.replace`.
+    new_date = _apply_fold(
+        apply_post_transition(
+            date.replace(day=day, hour=hour, minute=minute, second=0, microsecond=0)
+        )
     )
-    return apply_fold_and_post_transition(new_date)
+    return new_date
 
 
 SECONDS_PER_MINUTE = 60
