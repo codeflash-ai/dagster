@@ -626,12 +626,10 @@ class DirectOpExecutionContext(OpExecutionContext, BaseDirectExecutionContext):
             self._execution_properties.seen_outputs[output_name] = "seen"
 
     def has_seen_output(self, output_name: str, mapping_key: Optional[str] = None) -> bool:
+        seen_outputs = self._execution_properties.seen_outputs
         if mapping_key:
-            return (
-                output_name in self._execution_properties.seen_outputs
-                and mapping_key in self._execution_properties.seen_outputs[output_name]
-            )
-        return output_name in self._execution_properties.seen_outputs
+            return output_name in seen_outputs and mapping_key in seen_outputs[output_name]
+        return output_name in seen_outputs
 
     def asset_partitions_time_window_for_output(self, output_name: str = "result") -> TimeWindow:
         self._check_bound_to_invocation(
