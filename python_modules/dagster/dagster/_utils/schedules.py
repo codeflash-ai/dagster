@@ -53,12 +53,11 @@ def _is_simple_cron(
 
 
 def is_valid_cron_string(cron_string: str) -> bool:
-    if not CroniterShim.is_valid(cron_string):
+    if not _croniter.is_valid(cron_string):
         return False
-    # Croniter < 1.4 returns 2 items
-    # Croniter >= 1.4 returns 3 items
+    # Use the cached expand function
     expanded, *_ = CroniterShim.expand(cron_string)
-    # dagster only recognizes cron strings that resolve to 5 parts (e.g. not seconds resolution)
+    # Check for 5 parts in the expanded list
     return len(expanded) == 5
 
 
