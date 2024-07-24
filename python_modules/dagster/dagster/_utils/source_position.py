@@ -88,7 +88,7 @@ class HasSourcePositionAndKeyPath:
 def populate_source_position_and_key_paths(
     obj: Any,
     source_position_tree: Optional[SourcePositionTree],
-    key_path: KeyPath = [],
+    key_path: KeyPath = (),
 ) -> None:
     """Populate the SourcePositionAndKeyPath for the given object and its children.
 
@@ -108,10 +108,10 @@ def populate_source_position_and_key_paths(
         key_path (KeyPath): The path of keys that lead to the current object.
     """
     if isinstance(obj, HasSourcePositionAndKeyPath):
-        check.invariant(
-            obj._source_position_and_key_path is None,  # noqa: SLF001
-            "Cannot call populate_source_position_and_key_paths() more than once on the same object",
-        )
+        if obj._source_position_and_key_path is not None:
+            raise CheckError(
+                "Cannot call populate_source_position_and_key_paths() more than once on the same object"
+            )
 
         if source_position_tree is not None:
             object.__setattr__(
@@ -126,10 +126,11 @@ def populate_source_position_and_key_paths(
     for child_key_segment, child_tree in source_position_tree.children.items():
         try:
             child_obj = cast(Any, obj)[child_key_segment]
-        except TypeError:
-            if not isinstance(child_key_segment, str):
+        except (TypeError, KeyError, AttributeError):
+            if isinstance(child_key_segment, str):
+                child_obj = getattr(obj, child_key_segment)
+            else:
                 raise
-            child_obj = getattr(obj, child_key_segment)
 
         populate_source_position_and_key_paths(
             child_obj, child_tree, [*key_path, child_key_segment]
