@@ -78,8 +78,7 @@ def cron_string_repeats_every_hour(cron_string: str) -> bool:
 
 
 def apply_fold_and_post_transition(date: datetime.datetime) -> datetime.datetime:
-    date = apply_post_transition(date)
-    return _apply_fold(date)
+    return _apply_fold(apply_post_transition(date))
 
 
 def _apply_fold(date: datetime.datetime) -> datetime.datetime:
@@ -120,14 +119,13 @@ def _replace_date_fields(
     minute: int,
     day: int,
 ):
-    new_date = date.replace(
+    return date.replace(
         day=day,
         hour=hour,
         minute=minute,
         second=0,
         microsecond=0,
     )
-    return apply_fold_and_post_transition(new_date)
 
 
 SECONDS_PER_MINUTE = 60
@@ -317,33 +315,22 @@ def _find_monthly_schedule_time(
     already_on_boundary: bool,
 ) -> datetime.datetime:
     # First move to the correct day and time of day
-    if not already_on_boundary:
-        new_time = _replace_date_fields(
-            date,
-            check.not_none(hour),
-            check.not_none(minute),
-            check.not_none(day),
-        )
-    else:
+    if already_on_boundary:
         new_time = date
+    else:
+        new_time = _replace_date_fields(date, hour, minute, day)
 
     if ascending:
-        if already_on_boundary or new_time.timestamp() <= date.timestamp():
-            new_time = new_time + relativedelta(months=1)
+        if already_on_boundary or new_time <= date:
+            new_time += relativedelta(months=1)
     else:
-        if already_on_boundary or new_time.timestamp() >= date.timestamp():
-            # Move back a month if needed
-            new_time = new_time - relativedelta(months=1)
+        if already_on_boundary or new_time >= date:
+            new_time -= relativedelta(months=1)
 
     # If the hour or minute has changed from the schedule in cronstring,
     # double-check that it's still correct in case we crossed a DST boundary
     if new_time.hour != hour or new_time.minute != minute:
-        new_time = _replace_date_fields(
-            new_time,
-            check.not_none(hour),
-            check.not_none(minute),
-            check.not_none(day),
-        )
+        new_time = _replace_date_fields(new_time, hour, minute, day)
 
     return apply_fold_and_post_transition(new_time)
 
