@@ -531,10 +531,7 @@ class DirectOpExecutionContext(OpExecutionContext, BaseDirectExecutionContext):
         return key in per_invocation_properties.tags
 
     def get_tag(self, key: str) -> Optional[str]:
-        per_invocation_properties = self._check_bound_to_invocation(
-            fn_name="get_tag", fn_type="method"
-        )
-        return per_invocation_properties.tags.get(key)
+        return self._check_bound_to_invocation("get_tag", "method").tags.get(key)
 
     @property
     def alias(self) -> str:
