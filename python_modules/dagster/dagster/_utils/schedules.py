@@ -87,8 +87,8 @@ def _apply_fold(date: datetime.datetime) -> datetime.datetime:
     transition when there are two possibilities - match behavior described in the docs:
     https://docs.dagster.io/concepts/partitions-schedules-sensors/schedules#execution-time-and-daylight-savings-time)
 
-    Never call this with datetimes that could be non-existant. datetime_ambiguous will return true
-    but folding them will leave them non-existant.
+    Never call this with datetimes that could be non-existent. datetime_ambiguous will return true
+    but folding them will leave them non-existent.
     """  # noqa: D415
     if date.fold == 0 and date.hour in DAYLIGHT_SAVINGS_HOURS and datetime_ambiguous(date):
         return date.replace(fold=1)
