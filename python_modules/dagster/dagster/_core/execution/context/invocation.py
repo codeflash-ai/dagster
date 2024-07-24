@@ -525,10 +525,7 @@ class DirectOpExecutionContext(OpExecutionContext, BaseDirectExecutionContext):
         return self.partition_key
 
     def has_tag(self, key: str) -> bool:
-        per_invocation_properties = self._check_bound_to_invocation(
-            fn_name="has_tag", fn_type="method"
-        )
-        return key in per_invocation_properties.tags
+        return key in self._check_bound_to_invocation("has_tag", "method").tags
 
     def get_tag(self, key: str) -> Optional[str]:
         per_invocation_properties = self._check_bound_to_invocation(
