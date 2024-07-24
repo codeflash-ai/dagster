@@ -6,6 +6,7 @@ import re
 from typing import Iterator, Optional, Sequence, Union
 
 import pendulum
+from croniter import croniter
 from croniter import croniter as _croniter
 
 import dagster._check as check
@@ -73,7 +74,7 @@ def is_valid_cron_schedule(cron_schedule: Union[str, Sequence[str]]) -> bool:
 
 def cron_string_repeats_every_hour(cron_string: str) -> bool:
     """Returns if the given cron schedule repeats every hour."""
-    cron_parts, nth_weekday_of_month, *_ = CroniterShim.expand(cron_string)
+    cron_parts, nth_weekday_of_month = cached_expand(cron_string)[:2]
     return len(cron_parts[1]) == 1 and cron_parts[1][0] == "*"
 
 
@@ -847,3 +848,8 @@ def get_next_cron_tick(
         execution_timezone=timezone,
     )
     return next(cron_iter)
+
+
+@functools.lru_cache(maxsize=128)
+def cached_expand(*args, **kwargs):
+    return croniter.expand(*args, **kwargs)
