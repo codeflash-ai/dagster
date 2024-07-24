@@ -255,10 +255,8 @@ def _find_daily_schedule_time(
 
 
 def _get_crontab_day_of_week(dt: datetime.datetime) -> int:
-    weekday = dt.isoweekday()
-    # crontab has 0-6, sunday - saturday
-    # isoweekday is 1-7 monday - sunday
-    return weekday if weekday <= 6 else 0
+    weekday = dt.isoweekday() % 7  # Crontab expects 0-6, converting 1-7 to 0-6
+    return weekday
 
 
 def _find_weekly_schedule_time(
@@ -269,42 +267,27 @@ def _find_weekly_schedule_time(
     ascending: bool,
     already_on_boundary: bool,
 ) -> datetime.datetime:
-    # first move to the correct time of day
+    new_time = date
+
     if not already_on_boundary:
-        new_time = _replace_date_fields(
-            date,
-            hour,
-            minute,
-            date.day,
-        )
-        # Move to the correct day of the week
+        new_time = _replace_date_fields(date, hour, minute, date.day)
         current_day_of_week = _get_crontab_day_of_week(new_time)
 
-        if day_of_week != current_day_of_week:
-            if ascending:
-                new_time = new_time + relativedelta(days=(day_of_week - current_day_of_week) % 7)
-            else:
-                new_time = new_time - relativedelta(days=(current_day_of_week - day_of_week) % 7)
-    else:
-        new_time = date
+        day_delta = (day_of_week - current_day_of_week) % 7
+        if not ascending:
+            day_delta -= 7
 
-    # Make sure that we've actually moved in the correct direction, advance if we haven't
-    if ascending:
-        if already_on_boundary or new_time.timestamp() <= date.timestamp():
-            new_time = new_time + relativedelta(weeks=1)
-    else:
-        if already_on_boundary or new_time.timestamp() >= date.timestamp():
-            new_time = new_time - relativedelta(weeks=1)
+        if day_delta != 0:
+            new_time += relativedelta(days=day_delta)
 
-    # If the hour or minute has from the schedule in cronstring,
-    # double-check that it's still correct in case we crossed a DST boundary
+    if ascending and new_time <= date:
+        new_time += relativedelta(weeks=1)
+    elif not ascending and new_time >= date:
+        new_time -= relativedelta(weeks=1)
+
     if new_time.hour != hour or new_time.minute != minute:
-        new_time = _replace_date_fields(
-            new_time,
-            hour,
-            minute,
-            new_time.day,
-        )
+        new_time = _replace_date_fields(new_time, hour, minute, new_time.day)
+
     return apply_fold_and_post_transition(new_time)
 
 
