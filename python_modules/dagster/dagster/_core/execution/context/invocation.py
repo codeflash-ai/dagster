@@ -257,10 +257,8 @@ class DirectOpExecutionContext(OpExecutionContext, BaseDirectExecutionContext):
         self._exit_stack.close()
 
     def _check_bound_to_invocation(self, fn_name: str, fn_type: str) -> PerInvocationProperties:
-        if self._per_invocation_properties is None:
+        if not self._per_invocation_properties:
             raise DagsterInvalidPropertyError(_property_msg(fn_name, fn_type))
-        # return self._per_invocation_properties so that the calling function can access properties
-        # of self._per_invocation_properties without causing pyright errors
         return self._per_invocation_properties
 
     def bind(
@@ -602,9 +600,7 @@ class DirectOpExecutionContext(OpExecutionContext, BaseDirectExecutionContext):
         )
 
     def describe_op(self) -> str:
-        per_invocation_properties = self._check_bound_to_invocation(
-            fn_name="describe_op", fn_type="method"
-        )
+        per_invocation_properties = self._check_bound_to_invocation("describe_op", "method")
         return per_invocation_properties.step_description
 
     def log_event(self, event: UserEvent) -> None:
