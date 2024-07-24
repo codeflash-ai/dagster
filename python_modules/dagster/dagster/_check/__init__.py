@@ -4,30 +4,10 @@ import sys
 from contextlib import contextmanager
 from contextvars import ContextVar
 from os import PathLike, fspath
-from typing import (
-    AbstractSet,
-    Any,
-    Callable,
-    Dict,
-    ForwardRef,
-    Generator,
-    Iterable,
-    Iterator,
-    List,
-    Mapping,
-    NamedTuple,
-    NoReturn,
-    Optional,
-    Sequence,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-    cast,
-    get_args,
-    get_origin,
-    overload,
-)
+from typing import (AbstractSet, Any, Callable, Dict, ForwardRef, Generator,
+                    Iterable, Iterator, List, Mapping, NamedTuple, NoReturn,
+                    Optional, Sequence, Tuple, Type, TypeVar, Union, cast,
+                    get_args, get_origin, overload)
 
 from typing_extensions import Annotated
 
@@ -1639,11 +1619,7 @@ def param_invariant(condition: Any, param_name: str, desc: Optional[str] = None)
 
 def invariant(condition: Any, desc: Optional[str] = None) -> bool:
     if not condition:
-        if desc:
-            raise CheckError(f"Invariant failed. Description: {desc}")
-        else:
-            raise CheckError("Invariant failed.")
-
+        raise CheckError(f"Invariant failed. Description: {desc or ''}")
     return True
 
 
