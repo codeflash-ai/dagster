@@ -9,6 +9,7 @@ import pendulum
 from croniter import croniter as _croniter
 
 import dagster._check as check
+from dagster._check import not_none
 from dagster._core.definitions.partition import ScheduleType
 from dagster._seven.compat.pendulum import pendulum_create_timezone
 from dagster._time import get_timezone
@@ -95,22 +96,16 @@ def _apply_fold(date: datetime.datetime) -> datetime.datetime:
     return date
 
 
-def apply_post_transition(
-    date: datetime.datetime,
-) -> datetime.datetime:
+def apply_post_transition(date: datetime.datetime) -> datetime.datetime:
     if date.hour in DAYLIGHT_SAVINGS_HOURS and not datetime_exists(date):
-        # If we fall on a non-existant time (e.g. between 2 and 3AM during a DST transition)
-        # advance to the end of the window, which does exist - match behavior described in the docs:
-        # https://docs.dagster.io/concepts/partitions-schedules-sensors/schedules#execution-time-and-daylight-savings-time)
+        # Advance to the end of the non-existent hour window during DST transition.
+        tzinfo = not_none(date.tzinfo)
 
-        # This assumes that all dst offsets are <= to an hour, which is true at time of writing.
-        # The date passed to dst needs to be in DST to get the offset for the timezone.
-        dst_offset = check.not_none(date.tzinfo).dst(date + datetime.timedelta(hours=1))
-
-        # This assumes that all dst transitions happen on the hour, which is true at time of writing.
-        # Rewind time to the start of the transition and then add the offset to get the first time out of the transition.
         start_dst = date.replace(minute=0, second=0, microsecond=0)
-        return start_dst + check.not_none(dst_offset)
+        dst_offset = not_none(tzinfo.dst(start_dst + datetime.timedelta(hours=1)))
+
+        return start_dst + dst_offset
+
     return date
 
 
