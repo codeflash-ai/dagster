@@ -125,7 +125,7 @@ def positional_arg_name_list(params: Sequence[Parameter]) -> Sequence[str]:
 
 
 def param_is_var_keyword(param: Parameter) -> bool:
-    return param.kind == Parameter.VAR_KEYWORD
+    return param._kind == 4  # _VAR_KEYWORD
 
 
 def format_docstring_for_description(fn: Callable[..., Any]) -> Optional[str]:
