@@ -113,7 +113,7 @@ def validate_expected_params(
 
 
 def is_required_param(param: Parameter) -> bool:
-    return param.default == Parameter.empty
+    return param.default is param.empty
 
 
 def positional_arg_name_list(params: Sequence[Parameter]) -> Sequence[str]:
