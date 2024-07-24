@@ -567,26 +567,27 @@ def _timezone_aware_cron_iter(
 def _has_out_of_range_cron_interval_str(cron_string: str):
     assert CroniterShim.is_valid(cron_string)
     try:
-        for i, cron_part in enumerate(cron_string.lower().split()):
+        cron_parts = cron_string.lower().split()
+        for i, cron_part in enumerate(cron_parts):
             expr_parts = cron_part.split(",")
-            while len(expr_parts) > 0:
-                expr = expr_parts.pop()
-                t = re.sub(
-                    r"^\*(\/.+)$", r"%d-%d\1" % (CRON_RANGES[i][0], CRON_RANGES[i][1]), str(expr)
-                )
+            for expr in expr_parts:
+                t = expr
                 m = CRON_STEP_SEARCH_REGEX.search(t)
                 if not m:
-                    # try normalizing "{start}/{step}" to "{start}-{max}/{step}".
-                    t = re.sub(r"^(.+)\/(.+)$", r"\1-%d/\2" % (CRON_RANGES[i][1]), str(expr))
+                    t = (
+                        f"{CRON_RANGES[i][0]}-{CRON_RANGES[i][1]}/{t[2:]}"
+                        if t.startswith("*/")
+                        else f"{t}-{CRON_RANGES[i][1]}/{t.split('/')[1]}"
+                    )
                     m = CRON_STEP_SEARCH_REGEX.search(t)
                 if m:
-                    (low, high, step) = m.group(1), m.group(2), m.group(4) or 1
+                    low, high, step = m.groups()[0], m.groups()[1], m.groups()[3] or 1
                     if i == 2 and high == "l":
                         high = "31"
-                    if not INT_REGEX.search(low) or not INT_REGEX.search(high):
+                    if not (INT_REGEX.match(low) and INT_REGEX.match(high)):
                         continue
-                    low, high, step = map(int, [low, high, step])
-                    if step > high:
+                    low, high, step = int(low), int(high), int(step)
+                    if high < low or step > high:
                         return True
     except:
         pass
