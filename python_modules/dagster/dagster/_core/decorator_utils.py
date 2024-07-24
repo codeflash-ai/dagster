@@ -56,16 +56,13 @@ def get_valid_name_permutations(param_name: str) -> Set[str]:
     }
 
 
-def _is_param_valid(param: Parameter, expected_positional: str) -> bool:
+def _is_param_valid(param: Parameter, expected_positional: str, valid_names: set) -> bool:
     # The "*" character indicates that we permit any name for this positional parameter.
     if expected_positional == "*":
         return True
 
-    possible_kinds = {Parameter.POSITIONAL_OR_KEYWORD, Parameter.POSITIONAL_ONLY}
-
-    return (
-        param.name in get_valid_name_permutations(expected_positional)
-        and param.kind in possible_kinds
+    return param.name in valid_names and (
+        param.kind == Parameter.POSITIONAL_OR_KEYWORD or param.kind == Parameter.POSITIONAL_ONLY
     )
 
 
@@ -104,11 +101,18 @@ def validate_expected_params(
     params: Sequence[Parameter], expected_params: Sequence[str]
 ) -> Optional[str]:
     """Returns first missing positional, if any, otherwise None."""
-    expected_idx = 0
+    params_iter = iter(params)
+
     for expected_param in expected_params:
-        if expected_idx >= len(params) or not _is_param_valid(params[expected_idx], expected_param):
+        try:
+            param = next(params_iter)
+        except StopIteration:
             return expected_param
-        expected_idx += 1
+
+        valid_names = get_valid_name_permutations(expected_param)
+        if not _is_param_valid(param, expected_param, valid_names):
+            return expected_param
+
     return None
 
 
