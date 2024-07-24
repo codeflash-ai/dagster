@@ -115,19 +115,9 @@ def apply_post_transition(
 
 
 def _replace_date_fields(
-    date: datetime.datetime,
-    hour: int,
-    minute: int,
-    day: int,
-):
-    new_date = date.replace(
-        day=day,
-        hour=hour,
-        minute=minute,
-        second=0,
-        microsecond=0,
-    )
-    return apply_fold_and_post_transition(new_date)
+    date: datetime.datetime, hour: int, minute: int, day: int
+) -> datetime.datetime:
+    return date.replace(day=day, hour=hour, minute=minute, second=0, microsecond=0)
 
 
 SECONDS_PER_MINUTE = 60
@@ -216,41 +206,28 @@ def _find_hourly_schedule_time(
 
 
 def _find_daily_schedule_time(
-    minute: int,
-    hour: int,
-    date: datetime.datetime,
-    ascending: bool,
-    already_on_boundary: bool,
+    minute: int, hour: int, date: datetime.datetime, ascending: bool, already_on_boundary: bool
 ) -> datetime.datetime:
-    # First move to the correct time of day today (ignoring whether it is the correct day)
-    if not already_on_boundary or (
+    # Check if we need to adjust the time to the boundary
+    adjust_time = not already_on_boundary or (
         date.hour != hour or date.minute != minute or date.second != 0 or date.microsecond != 0
-    ):
-        new_time = _replace_date_fields(
-            date,
-            hour,
-            minute,
-            date.day,
-        )
+    )
+
+    if adjust_time:
+        new_time = _replace_date_fields(date, hour, minute, date.day)
     else:
         new_time = date
 
-    if ascending:
-        if already_on_boundary or new_time.timestamp() <= date.timestamp():
-            new_time = new_time + datetime.timedelta(days=1)
-    else:
-        if already_on_boundary or new_time.timestamp() >= date.timestamp():
-            new_time = new_time - datetime.timedelta(days=1)
+    # Adjust date to the next or previous day if necessary
+    if (ascending and (already_on_boundary or new_time <= date)) or (
+        not ascending and (already_on_boundary or new_time >= date)
+    ):
+        new_time += datetime.timedelta(days=1 if ascending else -1)
 
-    # If the hour or minute has changed the schedule in cronstring,
-    # double-check that it's still correct in case we crossed a DST boundary
+    # If the hour or minute has changed due to DST adjustment, correct it
     if new_time.hour != hour or new_time.minute != minute:
-        new_time = _replace_date_fields(
-            new_time,
-            hour,
-            minute,
-            new_time.day,
-        )
+        new_time = _replace_date_fields(new_time, hour, minute, new_time.day)
+
     return apply_fold_and_post_transition(new_time)
 
 
