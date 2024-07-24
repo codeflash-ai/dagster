@@ -43,11 +43,14 @@ def _is_simple_cron(
     of the common and easy to detect (daily at midnight and on the hour). The optimization is to avoid calling
     _find_schedule_time to find the next cron boundary.
     """
+    if dt.second != 0 or dt.microsecond != 0:
+        return False
+
     if cron_expression == "0 0 * * *":
-        return dt.hour == 0 and dt.minute == 0 and dt.second == 0 and dt.microsecond == 0
+        return dt.hour == 0 and dt.minute == 0
 
     if cron_expression == "0 * * * *":
-        return dt.minute == 0 and dt.second == 0 and dt.microsecond == 0
+        return dt.minute == 0
 
     return False
 
