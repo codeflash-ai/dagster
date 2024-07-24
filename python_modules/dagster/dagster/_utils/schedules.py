@@ -615,7 +615,6 @@ def cron_string_iterator(
     start_offset: int = 0,
 ) -> Iterator[datetime.datetime]:
     """Generator of datetimes >= start_timestamp for the given cron string."""
-    # leap day special casing
     if cron_string.endswith(" 29 2 *"):
         min_hour, _ = cron_string.split(" 29 2 *")
         day_before = f"{min_hour} 28 2 *"
@@ -627,72 +626,48 @@ def cron_string_iterator(
             ascending=ascending,
             start_offset=start_offset,
         ):
-            # only return on leap years
             if calendar.isleap(dt.year):
-                # shift 28th back to 29th
-                shifted_dt = dt + datetime.timedelta(days=1)
-                yield shifted_dt
+                yield dt + datetime.timedelta(days=1)
         return
+
     execution_timezone = execution_timezone or "UTC"
     timezone = pendulum_create_timezone(execution_timezone)
 
-    # Croniter < 1.4 returns 2 items
-    # Croniter >= 1.4 returns 3 items
     cron_parts, nth_weekday_of_month, *_ = CroniterShim.expand(cron_string)
+    is_numeric = [(len(part) == 1 and part[0] != "*") for part in cron_parts]
+    is_wildcard = [(len(part) == 1 and part[0] == "*") for part in cron_parts]
 
-    is_numeric = [len(part) == 1 and part[0] != "*" for part in cron_parts]
-    is_wildcard = [len(part) == 1 and part[0] == "*" for part in cron_parts]
+    all_numeric_minutes = len(cron_parts[0]) > 0 and all(part != "*" for part in cron_parts[0])
 
-    all_numeric_minutes = len(cron_parts[0]) > 0 and all(
-        cron_part != "*" for cron_part in cron_parts[0]
-    )
+    known_schedule_type = None
 
-    known_schedule_type: Optional[ScheduleType] = None
+    expected_hour = int(cron_parts[1][0]) if is_numeric[1] else None
+    if all_numeric_minutes:
+        expected_minutes = [int(part) for part in cron_parts[0]]
+    expected_day = int(cron_parts[2][0]) if is_numeric[2] else None
+    expected_day_of_week = int(cron_parts[4][0]) if is_numeric[4] else None
 
-    expected_hour = None
-    expected_minutes = None
-    expected_day = None
-    expected_day_of_week = None
-
-    # Special-case common intervals (hourly/daily/weekly/monthly) since croniter iteration can be
-    # much slower and has correctness issues on DST boundaries
     if not nth_weekday_of_month:
         if (
-            all(is_numeric[0:3])
+            all(is_numeric[:3])
             and all(is_wildcard[3:])
             and int(cron_parts[2][0]) <= MAX_DAY_OF_MONTH_WITH_GUARANTEED_MONTHLY_INTERVAL
-        ):  # monthly
+        ):
             known_schedule_type = ScheduleType.MONTHLY
-        elif all(is_numeric[0:2]) and is_numeric[4] and all(is_wildcard[2:4]):  # weekly
+        elif all(is_numeric[:2]) and is_numeric[4] and all(is_wildcard[2:4]):
             known_schedule_type = ScheduleType.WEEKLY
-        elif all(is_numeric[0:2]) and all(is_wildcard[2:]):  # daily
+        elif all(is_numeric[:2]) and all(is_wildcard[2:]):
             known_schedule_type = ScheduleType.DAILY
-        elif all_numeric_minutes and all(is_wildcard[1:]):  # hourly
+        elif all_numeric_minutes and all(is_wildcard[1:]):
             known_schedule_type = ScheduleType.HOURLY
 
-    if is_numeric[1]:
-        expected_hour = int(cron_parts[1][0])
-
-    if all_numeric_minutes:
-        expected_minutes = [int(cron_part) for cron_part in cron_parts[0]]
-
-    if is_numeric[2]:
-        expected_day = int(cron_parts[2][0])
-
-    if is_numeric[4]:
-        expected_day_of_week = int(cron_parts[4][0])
+    start_datetime = datetime.datetime.fromtimestamp(
+        start_timestamp, tz=get_timezone(execution_timezone)
+    )
 
     if known_schedule_type:
-        start_datetime = datetime.datetime.fromtimestamp(
-            start_timestamp, tz=get_timezone(execution_timezone)
-        )
-
         if start_offset == 0 and _is_simple_cron(cron_string, start_datetime):
-            # In simple cases, where you're already on a cron boundary, the below logic is unnecessary
-            # and slow
-            next_date = start_datetime
-            # This is already on a cron boundary, so yield it
-            yield pendulum.from_timestamp(next_date.timestamp(), tz=timezone)
+            yield pendulum.from_timestamp(start_datetime.timestamp(), tz=timezone)
         else:
             next_date = _find_schedule_time(
                 expected_minutes,
@@ -701,10 +676,9 @@ def cron_string_iterator(
                 expected_day_of_week,
                 known_schedule_type,
                 start_datetime,
-                ascending=not ascending,  # Going in the reverse direction
+                ascending=not ascending,
                 already_on_boundary=False,
             )
-            check.invariant(start_offset <= 0)
             for _ in range(-start_offset):
                 next_date = _find_schedule_time(
                     expected_minutes,
@@ -713,7 +687,7 @@ def cron_string_iterator(
                     expected_day_of_week,
                     known_schedule_type,
                     next_date,
-                    ascending=not ascending,  # Going in the reverse direction
+                    ascending=not ascending,
                     already_on_boundary=True,
                 )
 
@@ -728,15 +702,13 @@ def cron_string_iterator(
                 ascending=ascending,
                 already_on_boundary=True,
             )
-
             if start_offset == 0:
                 if ascending:
-                    # Guard against _find_schedule_time returning unexpected results
                     check.invariant(next_date.timestamp() >= start_timestamp)
                 else:
                     check.invariant(next_date.timestamp() <= start_timestamp)
-
             yield pendulum.from_timestamp(next_date.timestamp(), tz=timezone)
+
     else:
         yield from _croniter_string_iterator(
             start_timestamp, cron_string, execution_timezone, ascending, start_offset
