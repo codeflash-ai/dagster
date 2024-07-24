@@ -63,10 +63,13 @@ def _is_param_valid(param: Parameter, expected_positional: str) -> bool:
 
     possible_kinds = {Parameter.POSITIONAL_OR_KEYWORD, Parameter.POSITIONAL_ONLY}
 
+    param_name = param.name
     return (
-        param.name in get_valid_name_permutations(expected_positional)
-        and param.kind in possible_kinds
-    )
+        param_name == expected_positional
+        or param_name == f"_{expected_positional}"
+        or param_name == f"{expected_positional}_"
+        or param_name == "_"
+    ) and param.kind in possible_kinds
 
 
 def get_function_params(fn: Callable[..., Any]) -> Sequence[Parameter]:
