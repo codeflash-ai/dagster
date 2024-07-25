@@ -120,16 +120,20 @@ def _jobs_which_will_have_io_manager_replaced(
     jobs: Optional[Iterable[Union[JobDefinition, UnresolvedAssetJobDefinition]]],
     resource_defs: Mapping[str, Any],
 ) -> List[Union[JobDefinition, UnresolvedAssetJobDefinition]]:
-    """Returns whether any jobs will have their I/O manager replaced by an `io_manager` override from
+    """Returns any jobs that will have their I/O manager replaced by an `io_manager` override from
     the top-level `resource_defs` provided to `Definitions` in 1.3. We will warn users if this is
     the case.
     """
-    jobs = jobs or []
-    return [
-        job
-        for job in jobs
-        if isinstance(job, JobDefinition) and _io_manager_needs_replacement(job, resource_defs)
-    ]
+    if not jobs:
+        return []
+
+    result = []
+
+    for job in jobs:
+        if isinstance(job, JobDefinition) and _io_manager_needs_replacement(job, resource_defs):
+            result.append(job)
+
+    return result
 
 
 def _attach_resources_to_jobs_and_instigator_jobs(
