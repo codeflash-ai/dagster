@@ -1,8 +1,10 @@
 import os
 import pickle
+from os.path import join
 from typing import TYPE_CHECKING, Any, Optional
 
 from pydantic import Field
+from typing_extensions import Literal
 
 import dagster._check as check
 from dagster import (
@@ -299,7 +301,7 @@ class CustomPathPickledObjectFilesystemIOManager(IOManager):
         self.read_mode: Literal["rb"] = "rb"
 
     def _get_path(self, path: str) -> str:
-        return os.path.join(self.base_dir, path)  # type: ignore  # (possible none)
+        return join(self.base_dir, path)  # type: ignore
 
     def handle_output(self, context: OutputContext, obj: object):
         """Pickle the data and store the object to a custom file path.
