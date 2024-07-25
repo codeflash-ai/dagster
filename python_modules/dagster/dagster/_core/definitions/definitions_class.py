@@ -15,6 +15,7 @@ from typing import (
 import dagster._check as check
 from dagster._annotations import deprecated, experimental, public
 from dagster._config.pythonic_config import attach_resource_id_to_key_mapping
+from dagster._core.definitions import JobDefinition
 from dagster._core.definitions.asset_checks import AssetChecksDefinition
 from dagster._core.definitions.asset_graph import AssetGraph
 from dagster._core.definitions.asset_spec import AssetSpec
@@ -133,106 +134,88 @@ def _jobs_which_will_have_io_manager_replaced(
 
 
 def _attach_resources_to_jobs_and_instigator_jobs(
-    jobs: Optional[Iterable[Union[JobDefinition, UnresolvedAssetJobDefinition]]],
+    jobs: Optional[Iterable[Union[JobDefinition, UnresolvedAssetJobDefinition]]] = None,
     schedules: Optional[
         Iterable[Union[ScheduleDefinition, UnresolvedPartitionedAssetScheduleDefinition]]
-    ],
-    sensors: Optional[Iterable[SensorDefinition]],
-    resource_defs: Mapping[str, Any],
+    ] = None,
+    sensors: Optional[Iterable[SensorDefinition]] = None,
+    resource_defs: Mapping[str, Any] = {},
 ) -> _AttachedObjects:
     """Given a list of jobs, schedules, and sensors along with top-level resource definitions,
     attach the resource definitions to the jobs, schedules, and sensors which require them.
     """
-    jobs = jobs or []
-    schedules = schedules or []
-    sensors = sensors or []
+    if jobs is None:
+        jobs = []
+    if schedules is None:
+        schedules = []
+    if sensors is None:
+        sensors = []
 
-    # Add jobs in schedules and sensors as well
-    jobs = [
-        *jobs,
-        *[
-            schedule.job
-            for schedule in schedules
-            if isinstance(schedule, ScheduleDefinition)
-            and schedule.has_loadable_target()
-            and isinstance(schedule.job, (JobDefinition, UnresolvedAssetJobDefinition))
-        ],
-        *[
-            job
-            for sensor in sensors
-            if sensor.has_loadable_targets()
-            for job in sensor.jobs
-            if isinstance(job, (JobDefinition, UnresolvedAssetJobDefinition))
-        ],
-    ]
-    # Dedupe
-    jobs = list({id(job): job for job in jobs}.values())
+    # Add jobs in schedules and sensors as well in a single pass
+    job_dict = {id(job): job for job in jobs}
 
-    # Find unsatisfied jobs
-    unsatisfied_jobs = [
-        job
-        for job in jobs
-        if isinstance(job, JobDefinition)
-        and (
+    for schedule in schedules:
+        if isinstance(schedule, ScheduleDefinition) and schedule.has_loadable_target():
+            sched_job = schedule.job
+            if isinstance(sched_job, (JobDefinition, UnresolvedAssetJobDefinition)):
+                job_dict[id(sched_job)] = sched_job
+
+    for sensor in sensors:
+        if sensor.has_loadable_targets():
+            for job in sensor.jobs:
+                if isinstance(job, (JobDefinition, UnresolvedAssetJobDefinition)):
+                    job_dict[id(job)] = job
+
+    # Convert dictionary back to a list
+    jobs = list(job_dict.values())
+
+    # Find unsatisfied jobs and prepare resource-bound versions in one loop
+    unsatisfied_jobs = []
+    unsatisfied_job_to_resource_bound_job = {}
+
+    for job in jobs:
+        if isinstance(job, JobDefinition) and (
             job.is_missing_required_resources() or _io_manager_needs_replacement(job, resource_defs)
-        )
-    ]
-
-    # Create a mapping of job id to a version of the job with the resource defs bound
-    unsatisfied_job_to_resource_bound_job = {
-        id(job): job.with_top_level_resources(
-            {
+        ):
+            unsatisfied_jobs.append(job)
+            updated_resource_defs = {
                 **resource_defs,
                 **job.resource_defs,
-                # special case for IO manager - the job-level IO manager does not take precedence
-                # if it is the default and a top-level IO manager is provided
                 **(
                     {"io_manager": resource_defs["io_manager"]}
                     if _io_manager_needs_replacement(job, resource_defs)
                     else {}
                 ),
             }
-        )
-        for job in jobs
-        if job in unsatisfied_jobs
-    }
-
-    # Update all jobs to use the resource bound version
-    jobs_with_resources = [
-        unsatisfied_job_to_resource_bound_job[id(job)] if job in unsatisfied_jobs else job
-        for job in jobs
-    ]
-
-    # Update all schedules and sensors to use the resource bound version
-    updated_schedules = [
-        (
-            schedule.with_updated_job(unsatisfied_job_to_resource_bound_job[id(schedule.job)])
-            if (
-                isinstance(schedule, ScheduleDefinition)
-                and schedule.has_loadable_target()
-                and schedule.job in unsatisfied_jobs
+            unsatisfied_job_to_resource_bound_job[id(job)] = job.with_top_level_resources(
+                updated_resource_defs
             )
-            else schedule
-        )
-        for schedule in schedules
-    ]
-    updated_sensors = [
-        (
-            sensor.with_updated_jobs(
-                [
-                    (
-                        unsatisfied_job_to_resource_bound_job[id(job)]
-                        if job in unsatisfied_jobs
-                        else job
-                    )
-                    for job in sensor.jobs
-                ]
+
+    # Update all jobs to use the resource-bound version in one loop
+    jobs_with_resources = [unsatisfied_job_to_resource_bound_job.get(id(job), job) for job in jobs]
+
+    # Update all schedules and sensors to use the resource-bound version in a single pass
+    updated_schedules = []
+    for schedule in schedules:
+        if (
+            isinstance(schedule, ScheduleDefinition)
+            and schedule.has_loadable_target()
+            and id(schedule.job) in unsatisfied_job_to_resource_bound_job
+        ):
+            schedule = schedule.with_updated_job(
+                unsatisfied_job_to_resource_bound_job[id(schedule.job)]
             )
-            if sensor.has_loadable_targets() and any(job in unsatisfied_jobs for job in sensor.jobs)
-            else sensor
-        )
-        for sensor in sensors
-    ]
+        updated_schedules.append(schedule)
+
+    updated_sensors = []
+    for sensor in sensors:
+        if sensor.has_loadable_targets():
+            updated_jobs = [
+                unsatisfied_job_to_resource_bound_job.get(id(job), job) for job in sensor.jobs
+            ]
+            if any(job in unsatisfied_jobs for job in sensor.jobs):
+                sensor = sensor.with_updated_jobs(updated_jobs)
+        updated_sensors.append(sensor)
 
     return _AttachedObjects(jobs_with_resources, updated_schedules, updated_sensors)
 
