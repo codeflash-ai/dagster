@@ -30,7 +30,8 @@ class LocalArtifactStorage(ConfigurableClass):
         return self._base_dir
 
     def file_manager_dir(self, run_id: str) -> str:
-        check.str_param(run_id, "run_id")
+        if not isinstance(run_id, str):
+            raise TypeError('Parameter "run_id" must be of type str')
         return os.path.join(self.base_dir, "storage", run_id, "files")
 
     @property
