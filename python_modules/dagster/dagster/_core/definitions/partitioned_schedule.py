@@ -258,8 +258,15 @@ def _check_valid_schedule_partitions_def(
     MultiPartitionsDefinition,
     StaticPartitionsDefinition,
 ]:
-    if not has_one_dimension_time_window_partitioning(partitions_def) and not isinstance(
-        partitions_def, StaticPartitionsDefinition
+    from dagster._core.definitions.time_window_partitions import TimeWindowPartitionsDefinition
+
+    if not any(
+        [
+            isinstance(partitions_def, TimeWindowPartitionsDefinition),
+            isinstance(partitions_def, StaticPartitionsDefinition),
+            isinstance(partitions_def, MultiPartitionsDefinition)
+            and has_one_dimension_time_window_partitioning(partitions_def),
+        ]
     ):
         raise DagsterInvalidDefinitionError(
             "Tried to build a partitioned schedule from an asset job, but received an invalid"
