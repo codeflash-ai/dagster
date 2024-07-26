@@ -101,9 +101,8 @@ class ConfigMapping(
 
     def resolve_from_validated_config(self, config: Any) -> Any:
         if self.receive_processed_config_values is not None:
-            check.failed(
+            failed(
                 "`receive_processed_config_values` parameter has been set, but only applies to "
                 "unvalidated config."
             )
-
         return self.config_fn(config)
