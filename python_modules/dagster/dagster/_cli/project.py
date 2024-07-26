@@ -252,11 +252,7 @@ def _styled_list_examples_prints(examples: Sequence[str]) -> str:
 
 
 def _styled_success_statement(name: str, path: str):
-    return (
-        click.style("Success!", fg="green")
-        + " Created "
-        + click.style(name, fg="blue")
-        + " at "
-        + click.style(path, fg="blue")
-        + "."
-    )
+    success = click.style("Success!", fg="green")
+    styled_name = click.style(name, fg="blue")
+    styled_path = click.style(path, fg="blue")
+    return f"{success} Created {styled_name} at {styled_path}."
