@@ -115,12 +115,13 @@ class BaseWorkspaceRequestContext(IWorkspace, LoadingContext):
         pass
 
     def has_permission_for_location(self, permission: str, location_name: str) -> bool:
-        if self.has_code_location_name(location_name):
-            permissions = self.permissions_for_location(location_name=location_name)
-            return permissions[permission].enabled
-
-        # if not in workspace, fall back to the global permissions across all code locations
-        return self.has_permission(permission)
+        if permission not in self._checked_permissions:
+            self._checked_permissions.add(permission)
+            if self.has_code_location_name(location_name):
+                permissions = self.permissions_for_location(location_name=location_name)
+                return permissions[permission].enabled
+            return self.has_permission(permission)
+        return permission in self._checked_permissions
 
     @abstractmethod
     def has_permission(self, permission: str) -> bool:
@@ -395,8 +396,13 @@ class WorkspaceRequestContext(BaseWorkspaceRequestContext):
         return permissions[permission].enabled
 
     def has_permission_for_location(self, permission: str, location_name: str) -> bool:
-        self._checked_permissions.add(permission)
-        return super().has_permission_for_location(permission, location_name)
+        if permission not in self._checked_permissions:
+            self._checked_permissions.add(permission)
+            if self.has_code_location_name(location_name):
+                permissions = self.permissions_for_location(location_name=location_name)
+                return permissions[permission].enabled
+            return self.has_permission(permission)
+        return permission in self._checked_permissions
 
     def was_permission_checked(self, permission: str) -> bool:
         return permission in self._checked_permissions
