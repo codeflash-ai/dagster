@@ -349,7 +349,7 @@ def working_directory_option() -> ClickOption:
 
 
 def python_target_click_options(allow_multiple_python_targets: bool) -> Sequence[ClickOption]:
-    return [
+    options = [
         working_directory_option(),
         python_file_option(allow_multiple=allow_multiple_python_targets),
         python_module_option(allow_multiple=allow_multiple_python_targets),
@@ -362,12 +362,13 @@ def python_target_click_options(allow_multiple_python_targets: bool) -> Sequence
             "--attribute",
             "-a",
             help=(
-                "Attribute that is either a 1) repository or job or "
+                "Attribute that is either 1) a repository or job or "
                 "2) a function that returns a repository or job"
             ),
             envvar="DAGSTER_ATTRIBUTE",
         ),
     ]
+    return options
 
 
 def grpc_server_target_click_options(hidden=False) -> Sequence[ClickOption]:
@@ -413,8 +414,8 @@ def workspace_target_click_options() -> Sequence[ClickOption]:
 
 
 def python_job_target_click_options() -> Sequence[ClickOption]:
-    return [
-        *python_target_click_options(allow_multiple_python_targets=False),
+    options = python_target_click_options(allow_multiple_python_targets=False)
+    additional_options = [
         click.option(
             "--repository",
             "-r",
@@ -422,6 +423,7 @@ def python_job_target_click_options() -> Sequence[ClickOption]:
         ),
         job_option(),
     ]
+    return options + additional_options
 
 
 def target_with_config_option(command_name: str) -> ClickOption:
@@ -794,3 +796,18 @@ def get_external_job_from_kwargs(instance: DagsterInstance, version: str, kwargs
 
 def _sorted_quoted(strings: Iterable[str]) -> str:
     return "[" + ", ".join([f"'{s}'" for s in sorted(list(strings))]) + "]"
+
+
+def working_directory_option() -> ClickOption:
+    # Placeholder implementation, as the actual function definition is not available
+    return click.option("--working-directory", help="Working directory option.")
+
+
+def python_file_option(allow_multiple: bool) -> ClickOption:
+    # Placeholder implementation, as the actual function definition is not available
+    return click.option("--python-file", multiple=allow_multiple, help="Python file option.")
+
+
+def python_module_option(allow_multiple: bool) -> ClickOption:
+    # Placeholder implementation, as the actual function definition is not available
+    return click.option("--python-module", multiple=allow_multiple, help="Python module option.")
