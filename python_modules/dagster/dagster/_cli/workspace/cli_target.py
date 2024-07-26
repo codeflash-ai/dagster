@@ -448,10 +448,7 @@ def target_with_config_option(command_name: str) -> ClickOption:
 
 
 def python_job_config_argument(command_name: str) -> Callable[[T_Callable], T_Callable]:
-    def wrap(f: T_Callable) -> T_Callable:
-        return target_with_config_option(command_name)(f)
-
-    return wrap
+    return lambda f: target_with_config_option(command_name)(f)
 
 
 def python_job_target_argument(f):
