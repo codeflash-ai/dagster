@@ -180,15 +180,9 @@ if TYPE_CHECKING:
 DagsterInstanceOverrides: TypeAlias = Mapping[str, Any]
 
 
-# Sets the number of events that will be buffered before being written to the event log. Only
-# applies to explicitly batched events. Currently this defaults to 0, which turns off batching
-# entirely (multiple store_event calls are made instead of store_event_batch). This makes batching
-# opt-in.
-#
-# Note that we don't store the value in the constant so that it can be changed without a process
-# restart.
 def _get_event_batch_size() -> int:
-    return int(os.getenv("DAGSTER_EVENT_BATCH_SIZE", "0"))
+    env_var = os.getenv("DAGSTER_EVENT_BATCH_SIZE")
+    return int(env_var) if env_var is not None else 0
 
 
 def _is_batch_writing_enabled() -> bool:
