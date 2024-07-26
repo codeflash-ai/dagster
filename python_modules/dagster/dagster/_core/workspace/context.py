@@ -6,7 +6,19 @@ import warnings
 from abc import ABC, abstractmethod
 from contextlib import ExitStack
 from itertools import count
-from typing import TYPE_CHECKING, Any, Dict, Mapping, Optional, Sequence, Set, Type, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Set,
+    Type,
+    TypeVar,
+    Union,
+)
 
 from typing_extensions import Self
 
@@ -360,10 +372,11 @@ class WorkspaceRequestContext(BaseWorkspaceRequestContext):
         return self._workspace_snapshot.get(name)
 
     def get_code_location_statuses(self) -> Sequence[CodeLocationStatusEntry]:
-        return [
-            location_status_from_location_entry(entry)
-            for entry in self._workspace_snapshot.values()
-        ]
+        entries = self._workspace_snapshot.values()
+        statuses: List[CodeLocationStatusEntry] = []
+        for entry in entries:
+            statuses.append(location_status_from_location_entry(entry))
+        return statuses
 
     @property
     def process_context(self) -> "IWorkspaceProcessContext":
