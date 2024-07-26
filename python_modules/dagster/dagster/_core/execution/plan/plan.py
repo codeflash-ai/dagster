@@ -774,8 +774,9 @@ class ExecutionPlan(
 
         return deps
 
-    def get_steps_to_execute_in_topo_order(self) -> Sequence[ExecutionStep]:
-        return [step for step_level in self.get_steps_to_execute_by_level() for step in step_level]
+    def get_steps_to_execute_in_topo_order(self) -> Sequence[IExecutionStep]:
+        steps_by_level = self.get_steps_to_execute_by_level()
+        return [step for level in steps_by_level for step in level]
 
     def get_steps_to_execute_by_level(self) -> Sequence[Sequence[ExecutionStep]]:
         return _get_steps_to_execute_by_level(
