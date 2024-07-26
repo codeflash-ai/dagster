@@ -1024,18 +1024,10 @@ class ExecutionPlan(
     def step_handle_for_single_step_plans(
         self,
     ) -> Optional[Union[StepHandle, ResolvedFromDynamicStepHandle]]:
-        # Temporary hack to isolate single-step plans, which are often the representation of
-        # sub-plans in a multiprocessing execution environment.  We want to attribute pipeline
-        # events (like resource initialization) that are associated with the execution of these
-        # single step sub-plans.  Most likely will be removed with the refactor detailed in
-        # https://github.com/dagster-io/dagster/issues/2239
         if len(self.step_handles_to_execute) == 1:
             only_step = self.step_dict[self.step_handles_to_execute[0]]
-            if not isinstance(only_step, ExecutionStep):
-                return None
-
-            return cast(ExecutionStep, only_step).handle
-
+            if isinstance(only_step, ExecutionStep):
+                return only_step.handle
         return None
 
     @staticmethod
