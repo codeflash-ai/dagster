@@ -44,17 +44,12 @@ AVAILABLE_EXAMPLES = [
 
 
 def _get_target_for_version(version: str) -> str:
-    if version == "1!0+dev":
-        target = "master"
-    else:
-        target = version
-    return target
+    return "master" if version == "1!0+dev" else version
 
 
 def _get_url_for_version(version: str) -> str:
-    return (
-        f"https://codeload.github.com/dagster-io/dagster/tar.gz/{_get_target_for_version(version)}"
-    )
+    target = "master" if version == "1!0+dev" else version
+    return f"https://codeload.github.com/dagster-io/dagster/tar.gz/{target}"
 
 
 def download_example_from_github(path: str, example: str, version: str):
