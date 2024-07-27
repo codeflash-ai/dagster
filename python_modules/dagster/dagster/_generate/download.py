@@ -44,11 +44,7 @@ AVAILABLE_EXAMPLES = [
 
 
 def _get_target_for_version(version: str) -> str:
-    if version == "1!0+dev":
-        target = "master"
-    else:
-        target = version
-    return target
+    return "master" if version == "1!0+dev" else version
 
 
 def _get_url_for_version(version: str) -> str:
